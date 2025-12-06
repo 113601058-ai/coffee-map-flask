@@ -1,0 +1,427 @@
+from flask import Flask, render_template_string
+
+app = Flask(__name__)
+
+# ==========================================
+# 1. 資料庫 (CSV)
+# ==========================================
+csv_data = """店名,地址,交通方式 (從政大出發),營業時間,餐點,價格範圍,氛圍,插座,WiFi,時間限制與否,時間限制內容,讀書指數,聊天指數,其他評價/備註
+就諦書屋 Café Jiudi,106臺北市大安區浦城街9-12號,公車羅斯福路幹線至「羅斯福金門街口」，步行280m,平日14:00-24:00,咖啡、飲品、手工餅乾,$100-250,安靜，多數人在辦公讀書，輕聲細語,有,有,無,無,4,1,偶有家教但聲音小；環境明亮不擁擠。
+,,,假日13:00-24:00,,,,,,,,,,
+ALL DAY ROASTING COMPANY 師大店,100臺北市中正區師大路177號,公車羅斯福路幹線至「捷運台電大樓」，步行150m,每日 07:30-22:30,輕食、甜點、各式咖啡飲品,$150-350,前區安靜(辦公讀書)；後區假日較有交談聲,有,有,無,無,4,3,裝潢明亮，食物好吃，廁所乾淨；適合需要白噪音者。後面部分區域沒有插座
+yet coffee x deep work,110臺北市信義區信義路五段150巷11弄1號1樓,公車南環幹線至「信義松仁路口」，步行800m,平日11:00-24:00,鹹食(18:00後)、甜點、軟餅乾、飲品,$40-200,很安靜，播放不干擾的輕音樂,有,有,有,平日不限,5,1,環境明亮寬敞，對筆電族友善，內用續杯折$50；大眾運輸較遠。
+,,,週六10-24、週日13-24,,,,,,,假日3hr(續杯解限),,,
+CBC SPACE 景美咖啡圖書館,116臺北市文山區景興路193號,公車棕6至「文山二分局」，步行450m,平日08:00-18:00,早午餐、輕食、甜點、飲品,$150-300,1F可聊天、2F工作閱讀，互不干擾,有,有,無,無,5,4,二樓環境明亮、座位寬敞，非常適合讀書辦公。
+,,,假日08:00-20:00,,,,,,,,,,
+這間咖啡,106臺北市大安區信義路四段30巷39號,捷運轉乘至「大安站」，步行270m,平日14:00-24:00,鹹食、厚片、各式咖啡飲品,180,人多但不吵雜，音樂聲偏大(柔和流行樂),有,有,無,無,3,3,光線較暗，座位較擠，適合辦公多於讀書。
+,,,假日13:00-24:00,,,,,,,,,,
+星巴克信義經貿店,臺北市信義區信義路五段106號,公車南環幹線至「信義松仁路口」，步行5分,平日07:00-19:00,咖啡、飲品、輕食、甜點,$45-200,遊客商務客多，中午前較吵，環境較複雜,有,有,無,無,3,5,適合讀書後想逛街者；有面窗獨立位適合讀書。
+,,,假日08:30-17:30,,,,,,,,,,
+小米酒,臺北市大安區和平東路三段308巷37號1樓,公車282至「富陽街口」，步行5分,週二至五12-18,咖啡、飲品、輕食、甜點,$130-300,非常安靜，禁止聊天及睡覺,有,有,無,無,5,0,咖啡甜點水準高，適合專心唸書；每日甜點公佈於IG。
+,,,假日12-19,,,,,,,,,,
+小公寓Apt.cafe,臺北市文山區指南路二段56號2樓,政大正門向麥側步行3分鐘,每日 11:00-20:00,咖啡、飲品、輕食、甜點,$90-280,學生多，環境安靜，有店貓,有,有,有,3hr (未客滿不趕),4,1,餐點普通但適合充飢，有集點活動。
+黃山羊,臺北市文山區興隆路二段233巷6弄6號1樓,公車羅斯福/236區至「興德國小」，步行4分,每日 15:00-01:00,咖啡、飲品、輕食、甜點,$90-200,強烈音樂風格，聲音大，燈光暗(有檯燈),有,有,無,無,3,4,東西好吃但環境較吵(風格強烈)，外面偶有人抽菸。
+DREAMERS COFFEE 新店寶橋店,新北市新店區寶橋路92號,公車南環幹線至「台灣銀行」，步行7分,每日 07:00-21:00,咖啡、飲品、輕食、甜點,$75-250,早上安靜，中午過後較吵，客群多元,有,有,無,無,4,4,營業時間長，適合期中末；廁所少常需排隊。
+CAFE!N 硬咖啡 新店裕隆城門市,231新北市新店區中興路三段70號1F,捷運新店站步行10分鐘,每日09:00-21:30,咖啡、飲品、輕食、甜點,$100-400,人流大，環境吵雜，適合聊天,有,有,無,不限時,2,5,交通方便，但環境較吵。
+墨啡商行,231新北市新店區寶橋路1巷2號,捷運新店站步行15分鐘,每日10:30-19:00,咖啡、飲品、輕食、甜點,$200-400,室內較陰暗，依賴自然光,有,有,有,人多限2hr,4,1,稍微安靜但路程略遠，讀書需注意採光。
+Ruins Coffee Roasters,116臺北市文山區木柵路三段242號,捷運動物園/木柵站轉公車,週二到週日13:00-21:00 ,咖啡、飲品、輕食、甜點,$200-400,工業風，咖啡香濃，適合放空或閱讀,有,無,無,無,3,3,交通相對不便。僅部分有插座。
+the Second Half,116臺北市文山區指南路三段5號,捷運指南/動物園站轉公車,週二到週日12:00-21:00 ,咖啡、飲品、輕食、甜點,$200-400,寬敞安靜，燈光明亮,有,有,無,無,4,2,距政大稍近(步行約20分)，適合長時間學習。
+路易莎咖啡 政大萬壽門市,116臺北市文山區萬壽路27號,政大校園步行可達,週二到週日12:00-21:00,咖啡、飲品、輕食、甜點,$100-200,學生多，氛圍活潑但不吵,有,有,無,無,4,3,適合複習或小組討論，校園周邊方便。"""
+
+# ==========================================
+# 2. 網頁前端 (HTML/JS)
+# ==========================================
+html_code = """
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>政大咖啡廳導覽系統 V12.0</title>
+    <style>
+        :root {
+            --primary: #3498db; --secondary: #95a5a6; --dark: #2c3e50; --light: #f4f4f9;
+            --star-active: #f1c40f; --star-inactive: #bdc3c7; --danger: #e74c3c;
+            --success: #2ecc71; --warning: #f39c12; --edit: #2980b9;
+        }
+        body { font-family: "Microsoft JhengHei", Arial, sans-serif; margin: 0; padding: 0; height: 100vh; display: flex; background-color: var(--light); color: #333; }
+        #sidebar { width: 280px; background-color: var(--dark); color: white; display: flex; flex-direction: column; flex-shrink: 0; box-shadow: 2px 0 10px rgba(0,0,0,0.1); z-index: 10; }
+        #sidebar-header { padding: 25px 20px; background-color: #1a252f; text-align: center; border-bottom: 1px solid #34495e; }
+        #sidebar-header h2 { margin: 0; font-size: 1.3rem; letter-spacing: 1px; }
+        #shop-list-container { flex-grow: 1; overflow-y: auto; }
+        #shop-list { list-style: none; padding: 0; margin: 0; }
+        #shop-list li { padding: 15px 20px; border-bottom: 1px solid #34495e; cursor: pointer; transition: background 0.2s; position: relative; font-size: 0.95rem; color: #ecf0f1; padding-right: 40px; }
+        #shop-list li:hover { background-color: #34495e; border-left: 4px solid var(--primary); padding-left: 16px; }
+        .list-star { position: absolute; right: 15px; top: 50%; transform: translateY(-50%); width: 11px; height: 11px; display: none; }
+        .list-star path { fill: var(--star-active); }
+        #sidebar-footer { padding: 20px; background-color: #1a252f; border-top: 1px solid #34495e; display: flex; flex-direction: column; gap: 10px; }
+        .btn { padding: 10px 15px; border: none; border-radius: 6px; cursor: pointer; font-size: 0.95rem; font-family: inherit; transition: all 0.2s; text-align: center; display: flex; justify-content: center; align-items: center; gap: 5px; text-decoration: none; color: white; }
+        .btn:hover { filter: brightness(90%); transform: translateY(-1px); }
+        .btn:active { transform: translateY(0); }
+        .btn-primary { background-color: var(--primary); }
+        .btn-secondary { background-color: var(--secondary); }
+        .btn-warning { background-color: var(--warning); color: #fff; } 
+        .btn-admin { background-color: #7f8c8d; color: #fff; } 
+        .btn-danger { background-color: var(--danger); }
+        .btn-edit { background-color: var(--edit); }
+        .btn-user { background-color: #8e44ad; color: white; margin-bottom: 5px; } 
+        #main-content { flex-grow: 1; padding: 30px; overflow-y: auto; position: relative; display: flex; flex-direction: column; }
+        .view-section { display: none; animation: fadeIn 0.3s ease; max-width: 900px; margin: 0 auto; width: 100%; }
+        .view-section.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .filter-card { background: white; padding: 40px; border-radius: 12px; box-shadow: 0 5px 20px rgba(0,0,0,0.05); }
+        .filter-section { margin-bottom: 25px; border-bottom: 1px solid #eee; padding-bottom: 15px; }
+        .filter-section h3 { margin: 0 0 12px 0; font-size: 1rem; color: var(--dark); }
+        .checkbox-group { display: flex; flex-wrap: wrap; gap: 10px; }
+        .checkbox-group label { background: #ecf0f1; padding: 8px 16px; border-radius: 20px; cursor: pointer; font-size: 14px; user-select: none; transition: 0.2s; }
+        .checkbox-group input { display: none; }
+        .checkbox-group input:checked + span { color: var(--primary); font-weight: bold; }
+        .checkbox-group label:has(input:checked) { background: #d6eaf8; ring: 1px solid var(--primary); }
+        select, input[type="number"], input[type="text"] { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; }
+        .results-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
+        .result-item { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 3px 10px rgba(0,0,0,0.05); cursor: pointer; transition: 0.2s; border-left: 5px solid transparent; }
+        .result-item:hover { transform: translateY(-5px); box-shadow: 0 8px 20px rgba(0,0,0,0.1); border-left-color: var(--primary); }
+        .result-item h3 { margin: 0 0 10px 0; color: var(--dark); }
+        .shop-card { background: white; border-radius: 12px; padding: 35px; box-shadow: 0 5px 25px rgba(0,0,0,0.08); position: relative; border-top: 5px solid var(--primary); }
+        .card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; }
+        .card-header h1 { margin: 0; margin-top: -15px; font-size: 2rem; color: var(--dark); }
+        .tags-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+        .tag { font-size: 0.85rem; padding: 5px 12px; border-radius: 15px; background: #eee; color: #555; }
+        .tag.score { background: #fff3cd; color: #856404; }
+        .tag.socket { background: #d4edda; color: #155724; }
+        .star-btn-svg { width: 32px; height: 32px; cursor: pointer; fill: var(--star-inactive); transition: transform 0.2s, fill 0.2s; }
+        .star-btn-svg.active { fill: var(--star-active); }
+        .star-btn-svg:hover { transform: scale(1.15); }
+        .info-row { display: flex; margin-bottom: 12px; font-size: 1rem; line-height: 1.6; border-bottom: 1px dashed #f0f0f0; padding-bottom: 8px; align-items: baseline; }
+        .info-label { font-weight: bold; color: #7f8c8d; min-width: 90px; }
+        .info-content { color: #333; flex-grow: 1; white-space: pre-line; } 
+        .compare-table { width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; }
+        .compare-table th, .compare-table td { padding: 12px; border: 1px solid #eee; text-align: left; }
+        .compare-table th { background: #f8f9fa; font-weight: bold; }
+        .highlight-row { background-color: #fffde7 !important; border: 2px solid var(--warning) !important; }
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: none; justify-content: center; align-items: center; z-index: 100; }
+        .modal-box { background: white; width: 90%; max-width: 650px; max-height: 90vh; border-radius: 12px; padding: 30px; overflow-y: auto; box-shadow: 0 10px 40px rgba(0,0,0,0.25); }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 10px; }
+        .close-modal { font-size: 28px; cursor: pointer; color: #aaa; }
+        .close-modal:hover { color: #333; }
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .full-width { grid-column: span 2; }
+        .form-label { display: block; margin-bottom: 5px; font-weight: bold; font-size: 0.9rem; color: #555; }
+        .time-rule { background: #f9f9f9; padding: 15px; border-radius: 8px; margin-bottom: 10px; position: relative; border: 1px solid #e0e0e0; }
+        .time-rule-remove { position: absolute; top: 10px; right: 10px; color: var(--danger); cursor: pointer; font-size: 0.8rem; }
+        .admin-btn-group { display: flex; gap: 8px; }
+        .hidden-row { display: none; }
+    </style>
+</head>
+<body>
+    <div id="sidebar">
+        <div id="sidebar-header"><h2>☕ 政大咖啡地圖</h2></div>
+        <div id="shop-list-container"><ul id="shop-list"></ul></div>
+        <div id="sidebar-footer">
+            <button id="btn-user" class="btn btn-user" onclick="handleUserLogin()">👤 訪客 (點擊登入)</button>
+            <button class="btn btn-warning" onclick="openAddModal()">＋ 新增咖啡廳</button>
+            <button class="btn btn-admin" onclick="openAdmin()">🔧 管理員後台</button>
+        </div>
+    </div>
+
+    <div id="main-content">
+        <div id="view-filter" class="view-section active">
+            <div class="filter-card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h2 style="margin:0; color: var(--dark);">尋找你的理想咖啡廳</h2>
+                    <div style="display:flex; gap:10px;">
+                        <button class="btn btn-secondary" onclick="showFavorites()">★ 查看收藏比較</button>
+                        <button class="btn btn-danger" onclick="clearFavorites()">🗑️ 清空收藏</button>
+                    </div>
+                </div>
+                <div class="filter-section"><h3>1. 營業星期 (需全部符合)</h3><div class="checkbox-group"><label><input type="checkbox" name="day" value="Mon"><span>週一</span></label><label><input type="checkbox" name="day" value="Tue"><span>週二</span></label><label><input type="checkbox" name="day" value="Wed"><span>週三</span></label><label><input type="checkbox" name="day" value="Thu"><span>週四</span></label><label><input type="checkbox" name="day" value="Fri"><span>週五</span></label><label><input type="checkbox" name="day" value="Sat"><span>週六</span></label><label><input type="checkbox" name="day" value="Sun"><span>週日</span></label></div></div>
+                <div class="filter-section"><h3>2. 營業時段 (需符合所選)</h3><div class="checkbox-group"><label><input type="checkbox" name="time" value="morning"><span>早上 (12:00前)</span></label><label><input type="checkbox" name="time" value="afternoon"><span>下午 (12-17)</span></label><label><input type="checkbox" name="time" value="evening"><span>晚上 (17:00後)</span></label></div></div>
+                <div class="filter-section form-grid">
+                    <div><h3>3. 插座</h3><select id="f-socket"><option value="all">不拘</option><option value="有">必須有插座</option></select></div>
+                    <div><h3>4. 限時</h3><select id="f-limit"><option value="all">不拘</option><option value="無">必須無限時</option></select></div>
+                </div>
+                <div class="filter-section"><h3>5. 最低讀書指數 (1-5)</h3><input type="number" id="f-study" min="1" max="5" value="3"></div>
+                <button class="btn btn-primary" style="width:100%; font-size:1.1rem; padding:12px;" onclick="applyFilter()">🔍 開始嚴格篩選</button>
+            </div>
+        </div>
+        <div id="view-results" class="view-section">
+            <div style="margin-bottom: 20px; display:flex; justify-content:space-between; align-items:center;">
+                <button class="btn btn-secondary" onclick="switchView('view-filter')">← 返回篩選條件</button>
+                <h3 style="margin:0; color:#555">篩選結果</h3>
+            </div>
+            <div id="results-container" class="results-grid"></div>
+        </div>
+        <div id="view-detail" class="view-section">
+            <div style="margin-bottom: 15px;"><button class="btn btn-secondary" onclick="goBackLogic()">← 返回列表</button></div>
+            <div id="detail-container"></div>
+        </div>
+        <div id="view-compare" class="view-section">
+            <button class="btn btn-secondary" onclick="switchView('view-filter')" style="margin-bottom:15px;">← 返回首頁</button>
+            <div style="background:white; padding:20px; border-radius:10px;">
+                <h3 style="margin-top:0">收藏比較</h3>
+                <div style="margin-bottom:15px;">
+                    <label style="margin-right:15px"><input type="checkbox" class="cmp-chk" value="price" checked onchange="renderCompare()"> 價格</label>
+                    <label style="margin-right:15px"><input type="checkbox" class="cmp-chk" value="socket" checked onchange="renderCompare()"> 插座</label>
+                    <label style="margin-right:15px"><input type="checkbox" class="cmp-chk" value="limit" onchange="renderCompare()"> 限時</label>
+                    <label style="margin-right:15px"><input type="checkbox" class="cmp-chk" value="study" checked onchange="renderCompare()"> 讀書指數</label>
+                    <label><input type="checkbox" class="cmp-chk" value="food" onchange="renderCompare()"> 餐點</label>
+                </div>
+                <div id="compare-container" style="overflow-x:auto;"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-shop" class="modal-overlay">
+        <div class="modal-box">
+            <div class="modal-header"><h2 id="modal-title">新增咖啡廳</h2><span class="close-modal" onclick="closeModal('modal-shop')">&times;</span></div>
+            <form onsubmit="saveShop(event)">
+                <input type="hidden" id="input-id">
+                <div class="form-grid">
+                    <div class="full-width"><label class="form-label">店名 *</label><input type="text" id="input-name" required></div>
+                    <div class="full-width"><label class="form-label">地址 *</label><input type="text" id="input-addr" required></div>
+                    <div class="full-width" style="background:#f4f4f9; padding:15px; border-radius:8px;">
+                        <label class="form-label">營業時間設定 *</label><div id="time-rules-container"></div>
+                        <button type="button" class="btn btn-secondary" style="font-size:0.8rem; padding:5px 10px;" onclick="addTimeRule()">＋ 增加時段 (如假日)</button>
+                        <input type="text" id="input-hours-note" placeholder="營業時間備註 (選填)" style="margin-top:10px;">
+                    </div>
+                    <div><label class="form-label">插座</label><select id="input-socket"><option value="有">有</option><option value="無">無</option></select></div>
+                    
+                    <div>
+                        <label class="form-label">限時</label>
+                        <select id="input-limit" onchange="toggleLimitInput()">
+                            <option value="無">無</option>
+                            <option value="有">有</option>
+                        </select>
+                    </div>
+                    <div id="limit-note-container" class="full-width hidden-row" style="background:#fff3cd; padding:10px; border-radius:6px;">
+                        <label class="form-label" style="color:#856404;">限時說明 (請填寫具體規則)</label>
+                        <input type="text" id="input-limit-note" placeholder="例如：客滿限時2小時">
+                    </div>
+
+                    <div><label class="form-label">讀書指數 (1-5)</label><input type="number" id="input-study" min="1" max="5" value="3"></div>
+                    <div><label class="form-label">聊天指數 (1-5)</label><input type="number" id="input-chat" min="1" max="5" value="3"></div>
+                    <div class="full-width"><label class="form-label">餐點</label><input type="text" id="input-food" placeholder="例如：咖啡、甜點"></div>
+                    <div class="full-width"><label class="form-label">價格範圍</label><input type="text" id="input-price" placeholder="例如：$150-300"></div>
+                    <div class="full-width"><label class="form-label">氛圍描述</label><input type="text" id="input-vibe"></div>
+                    <div class="full-width"><label class="form-label">詳細備註 (直接顯示)</label><textarea id="input-note" style="width:100%; height:80px; padding:10px; border:1px solid #ddd; border-radius:6px;"></textarea></div>
+                </div>
+                <button type="submit" class="btn btn-primary" style="width:100%; margin-top:20px;">💾 儲存資料</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="modal-admin" class="modal-overlay">
+        <div class="modal-box">
+            <div class="modal-header"><h2>後台管理</h2><span class="close-modal" onclick="closeModal('modal-admin')">&times;</span></div>
+            <div id="admin-login">
+                <p>請輸入管理員密碼 (admin)</p><input type="password" id="admin-pwd" style="margin-bottom:10px;">
+                <button class="btn btn-primary" onclick="checkAdmin()">登入</button>
+            </div>
+            <div id="admin-panel" style="display:none;"><div style="overflow-y:auto; max-height:400px;"><table class="compare-table" id="admin-table"></table></div></div>
+        </div>
+    </div>
+
+    <script>
+        function getStarSVG(active=false, attr=""){ const c=active?'star-btn-svg active':'star-btn-svg'; return `<svg class="${c}" viewBox="0 0 24 24" ${attr}><path d="M12,2 L15.09,8.26 L22,9.27 L17,14.14 L18.18,21.02 L12,17.77 L5.82,21.02 L7,14.14 L2,9.27 L8.91,8.26 L12,2 Z"></path></svg>`; }
+        
+        const csvRawData = `{{ coffee_data | safe }}`;
+        let shops=[], favorites=new Set(), currentUser=null, previousView='view-filter';
+
+        window.showTimeNote = function(txt) { alert('⚠️ 限時說明：\\n' + txt); }
+
+        function beautifyText(text) {
+            if (!text) return "";
+            return text.replace(/3hr/g, "3 小時").replace(/2hr/g, "2 小時").replace(/平日不限/g, "平日不限時").replace(/未客滿不趕/g, "未客滿不限時");
+        }
+
+        function handleUserLogin(){
+            if(currentUser){
+                if(confirm(`確定要登出 ${currentUser} 嗎？\\n登出後收藏將會清空 (恢復訪客狀態)。`)){
+                    currentUser=null; favorites.clear(); updateUserUI(); renderSidebar();
+                    if(document.getElementById('view-compare').classList.contains('active')) switchView('view-filter');
+                    alert("已登出。");
+                }
+            }else{
+                let name=prompt("請輸入您的使用者名稱：\\n(若名稱已存在將詢問是否登入)");
+                if(name && name.trim()){
+                    name=name.trim(); const k=`favs_${name}`; const exists=localStorage.getItem(k)!==null;
+                    if(exists){
+                        const isOwner=confirm(`⚠️ 名稱「${name}」已經被註冊過了！\\n\\n請問這是您的帳號嗎？\\n● 按「確定」：登入並載入舊資料。\\n● 按「取消」：名稱重複，請更換其他名稱。`);
+                        if(isOwner){ currentUser=name; loadUserFavorites(); updateUserUI(); renderSidebar(); alert(`歡迎回來，${currentUser}！`); }
+                        else alert("❌ 名稱重複，請更換！");
+                    }else{
+                        currentUser=name; favorites=new Set(); saveUserFavorites(); updateUserUI(); renderSidebar(); alert(`歡迎加入，${currentUser}！`);
+                    }
+                }
+            }
+        }
+        function loadUserFavorites(){ if(!currentUser)return; const d=JSON.parse(localStorage.getItem(`favs_${currentUser}`)||'[]'); favorites=new Set(d); }
+        function saveUserFavorites(){ if(!currentUser)return; localStorage.setItem(`favs_${currentUser}`, JSON.stringify(Array.from(favorites))); }
+        function updateUserUI(){ document.getElementById('btn-user').innerHTML = currentUser ? `👤 ${currentUser} (登出)` : `👤 訪客 (點擊登入)`; }
+
+        function initData(){
+            shops=[]; const lines=csvRawData.split('\\n'); let currentShop=null;
+            for(let i=1;i<lines.length;i++){
+                if(!lines[i].trim())continue; const row=lines[i].split(',');
+                if(row[0]==='' && currentShop){
+                    if(row[3]){ currentShop.hoursDisplay+=`\\n${row[3]}`; parseTimeRule(currentShop,row[3]); }
+                    // *** 修正重點：只合併文字，不強改狀態 ***
+                    if(row[10]) currentShop.limitNote = (currentShop.limitNote ? currentShop.limitNote + "; " : "") + row[10];
+                }else{
+                    currentShop={ 
+                        id:i, isCustom:false, name:row[0], addr:row[1], hoursDisplay:row[3], timeRules:[], 
+                        food:row[4], price:row[5], vibe:row[6], socket:row[7], limit:row[9], 
+                        limitNote:row[10], study:parseInt(row[11]), chat:parseInt(row[12]), note:row[13] 
+                    };
+                    parseTimeRule(currentShop,row[3]); shops.push(currentShop);
+                }
+            }
+            // 美化
+            shops.forEach(s => s.limitNote = beautifyText(s.limitNote));
+            const cShops=JSON.parse(localStorage.getItem('customShops')||'[]'); shops=[...shops,...cShops];
+            renderSidebar();
+        }
+        function parseTimeRule(shop,t){
+            if(!t)return; let days=[];
+            if(t.includes('每日')||t.includes('每天')) days=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+            else{
+                if(t.includes('平日')||t.includes('週一至週五')) days.push('Mon','Tue','Wed','Thu','Fri');
+                if(t.includes('假日')||t.includes('週末')) days.push('Sat','Sun');
+                if(t.includes('週二至五')) days.push('Tue','Wed','Thu','Fri');
+                if(t.includes('週二至週日')) days.push('Tue','Wed','Thu','Fri','Sat','Sun');
+                ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].forEach((d,i)=>{ if(t.includes(['週一','週二','週三','週四','週五','週六','週日'][i])) days.push(d); });
+            }
+            if(days.length===0) days=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+            const m=t.match(/(\\d{1,2})[:：]?(\\d{2})?/g); let s=12,e=18;
+            if(m&&m.length>=1){ s=parseInt(m[0]); e=m.length>=2?parseInt(m[1]):s+8; }
+            if(e<s) e+=24;
+            shop.timeRules.push({days:[...new Set(days)],start:s,end:e});
+        }
+
+        function switchView(v){ if(v!=='view-detail') previousView=document.querySelector('.view-section.active').id; document.querySelectorAll('.view-section').forEach(e=>e.classList.remove('active')); document.getElementById(v).classList.add('active'); }
+        function goBackLogic(){ switchView(previousView==='view-results'?'view-results':'view-filter'); }
+        
+        function renderSidebar(){
+            const l=document.getElementById('shop-list'); l.innerHTML='';
+            shops.forEach(s=>{
+                const li=document.createElement('li');
+                li.innerHTML=`${s.name}<div class="list-star" id="side-star-${s.id}">${getStarSVG(true)}</div>`;
+                li.onclick=()=>showDetail(s,'sidebar'); l.appendChild(li);
+                if(favorites.has(s.id)) document.getElementById(`side-star-${s.id}`).style.display='block';
+            });
+        }
+
+        function applyFilter(){
+            const ds=Array.from(document.querySelectorAll('input[name="day"]:checked')).map(c=>c.value);
+            const ts=Array.from(document.querySelectorAll('input[name="time"]:checked')).map(c=>c.value);
+            const sock=document.getElementById('f-socket').value, lim=document.getElementById('f-limit').value, std=parseInt(document.getElementById('f-study').value);
+            const res=shops.filter(s=>{
+                if(s.study<std || (sock!=='all'&&s.socket!=='有') || (lim==='無'&&s.limit!=='無')) return false;
+                if(ds.length>0 && !ds.every(d=>s.timeRules.some(r=>r.days.includes(d)))) return false;
+                if(ts.length>0 && !ts.every(t=>s.timeRules.some(r=>{
+                    if(t==='morning')return r.start<12; if(t==='afternoon')return r.start<17&&r.end>12; if(t==='evening')return r.end>17; return false;
+                }))) return false;
+                return true;
+            });
+            renderResults(res); previousView='view-filter'; switchView('view-results');
+        }
+
+        function renderResults(l){
+            const c=document.getElementById('results-container');
+            if(l.length===0){ c.innerHTML='<div style="grid-column:1/-1;text-align:center;color:#666;">沒有符合條件的店家</div>'; return; }
+            c.innerHTML=l.map(s=>`<div class="result-item" onclick="showDetail(shops.find(x=>x.id===${s.id}),'results')"><h3>${s.name}</h3><div style="font-size:0.9rem;color:#777;margin-bottom:10px;">${s.addr}</div><div style="display:flex;gap:5px;"><span class="tag score">📖 ${s.study}</span>${s.socket==='有'?'<span class="tag socket">⚡ 有插座</span>':''}</div></div>`).join('');
+        }
+
+        function showDetail(s,src){
+            if(src==='results') previousView='view-results'; else previousView='view-filter';
+            const c=document.getElementById('detail-container'), isFav=favorites.has(s.id);
+            
+            // --- 限時泡泡邏輯 (嚴格依照檔案) ---
+            let timeTag = '';
+            if(s.limit === '無') {
+                timeTag = `<span class="tag" style="background:#e8f5e9; color:#2e7d32">⏳ 無限時</span>`;
+            } else {
+                const safeNote = (s.limitNote || '無詳細說明').replace(/'/g, "\\\\'").replace(/"/g, '&quot;').replace(/\\n/g, '\\\\n');
+                timeTag = `<span class="tag" style="background:#ffebee; color:#c62828; cursor:pointer;" onclick="showTimeNote('${safeNote}')">⏳ ${s.limit} (點擊查看)</span>`;
+            }
+
+            c.innerHTML=`<div class="shop-card"><div class="card-header"><div><h1>${s.name}</h1><div class="tags-row"><span class="tag score">📖 讀書 ${s.study}</span><span class="tag">🗣️ 聊天 ${s.chat}</span><span class="tag socket">⚡ 插座：${s.socket}</span>${timeTag}</div></div><div onclick="toggleFav(${s.id},this)">${getStarSVG(isFav)}</div></div><div class="info-row"><span class="info-label">📍 地址</span><span class="info-content">${s.addr}</span></div><div class="info-row"><span class="info-label">🕒 時間</span><span class="info-content">${s.hoursDisplay}</span></div><div class="info-row"><span class="info-label">💰 價格</span><span class="info-content">${s.price}</span></div><div class="info-row"><span class="info-label">🍔 餐點</span><span class="info-content">${s.food}</span></div><div class="info-row"><span class="info-label">💡 氛圍</span><span class="info-content">${s.vibe}</span></div><div class="info-row"><span class="info-label">📝 備註</span><span class="info-content">${s.note||'無'}</span></div></div>`;
+            switchView('view-detail');
+        }
+
+        function toggleFav(id,btn){
+            const svg=btn.querySelector?btn.querySelector('svg'):btn;
+            if(favorites.has(id)){ favorites.delete(id); svg.classList.remove('active'); document.getElementById(`side-star-${id}`)&&(document.getElementById(`side-star-${id}`).style.display='none'); }
+            else{ favorites.add(id); svg.classList.add('active'); document.getElementById(`side-star-${id}`)&&(document.getElementById(`side-star-${id}`).style.display='block'); }
+            if(currentUser) saveUserFavorites();
+        }
+        function showFavorites(){ if(favorites.size===0){ alert("目前沒有收藏喔！"); return; } renderCompare(); switchView('view-compare'); }
+        function clearFavorites(){ if(confirm("確定清空所有收藏？")){ favorites.clear(); if(currentUser)saveUserFavorites(); document.querySelectorAll('.list-star').forEach(el=>el.style.display='none'); alert("已清空"); } }
+        
+        function renderCompare(){
+            const l=shops.filter(s=>favorites.has(s.id)), keys=Array.from(document.querySelectorAll('.cmp-chk:checked')).map(c=>c.value);
+            const lbl={price:'價格',socket:'插座',limit:'限時',study:'讀書指數',food:'餐點'};
+            let h=`<table class="compare-table"><thead><tr><th>比較項目</th>`; l.forEach(s=>h+=`<th>${s.name} <span style="color:red;cursor:pointer;" onclick="removeFavCompare(${s.id})">✖</span></th>`); h+='</tr></thead><tbody>';
+            keys.forEach(k=>{ h+=`<tr class="highlight-row"><td>${lbl[k]}</td>`; l.forEach(s=>h+=`<td>${s[k]}</td>`); h+='</tr>'; });
+            h+=`<tr><td>營業時間</td>${l.map(s=>`<td style="font-size:0.9rem;white-space:pre-line">${s.hoursDisplay}</td>`).join('')}</tr></tbody></table>`;
+            document.getElementById('compare-container').innerHTML=h;
+        }
+        function removeFavCompare(id){ favorites.delete(id); if(currentUser)saveUserFavorites(); if(favorites.size===0)switchView('view-filter'); else renderCompare(); document.getElementById(`side-star-${id}`)&&(document.getElementById(`side-star-${id}`).style.display='none'); }
+
+        function openAddModal(){ document.querySelector('form').reset(); document.getElementById('input-id').value=''; document.getElementById('time-rules-container').innerHTML=''; addTimeRule(); toggleLimitInput(); document.getElementById('modal-shop').style.display='flex'; }
+        function closeModal(id){ document.getElementById(id).style.display='none'; }
+        function addTimeRule(){ const d=document.createElement('div'); d.className='time-rule'; d.innerHTML=`<span class="time-rule-remove" onclick="this.parentElement.remove()">移除</span><div class="checkbox-group" style="margin-bottom:10px;">${['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map(x=>`<label><input type="checkbox" value="${x}" class="rule-day"><span>${x}</span></label>`).join('')}</div><div style="display:flex;gap:10px;"><input type="number" class="rule-start" placeholder="開 (例10)" min="0" max="23"><input type="number" class="rule-end" placeholder="關 (例22)" min="0" max="24"></div>`; document.getElementById('time-rules-container').appendChild(d); }
+        
+        function toggleLimitInput() {
+            const val = document.getElementById('input-limit').value;
+            const container = document.getElementById('limit-note-container');
+            if (val === '有') { container.style.display = 'block'; document.getElementById('input-limit-note').setAttribute('required', 'true'); }
+            else { container.style.display = 'none'; document.getElementById('input-limit-note').removeAttribute('required'); document.getElementById('input-limit-note').value = ''; }
+        }
+
+        function saveShop(e){
+            e.preventDefault(); let r=[], disp=[];
+            document.querySelectorAll('.time-rule').forEach(div=>{
+                const days=Array.from(div.querySelectorAll('.rule-day:checked')).map(c=>c.value), s=div.querySelector('.rule-start').value, en=div.querySelector('.rule-end').value;
+                if(days.length>0 && s && en){ r.push({days, start:parseInt(s), end:parseInt(en)}); disp.push(`${days.length===7?'每日':days.join(',')} ${s}:00-${en}:00`); }
+            });
+            const hn=document.getElementById('input-hours-note').value; if(hn) disp.push(`(${hn})`);
+            const eid=document.getElementById('input-id').value, nid=eid?parseInt(eid):Date.now();
+            let lNote = document.getElementById('input-limit-note').value;
+            const limitVal = document.getElementById('input-limit').value;
+            if(limitVal === '無') lNote = '無';
+
+            const ns={ id:nid, isCustom:true, name:document.getElementById('input-name').value, addr:document.getElementById('input-addr').value, hoursDisplay:disp.join('\\n'), timeRules:r, socket:document.getElementById('input-socket').value, limit:limitVal, limitNote:lNote, study:parseInt(document.getElementById('input-study').value), chat:parseInt(document.getElementById('input-chat').value), food:document.getElementById('input-food').value, price:document.getElementById('input-price').value, vibe:document.getElementById('input-vibe').value, note:document.getElementById('input-note').value };
+            let cs=JSON.parse(localStorage.getItem('customShops')||'[]');
+            if(eid){ const idx=cs.findIndex(s=>s.id===nid); if(idx!==-1)cs[idx]=ns; } else cs.push(ns);
+            localStorage.setItem('customShops', JSON.stringify(cs)); closeModal('modal-shop'); initData(); alert(eid?'修改成功':'新增成功');
+            if(document.getElementById('admin-panel').style.display==='block') renderAdminTable();
+        }
+
+        function openAdmin(){ document.getElementById('modal-admin').style.display='flex'; if(document.getElementById('admin-panel').style.display==='block') renderAdminTable(); }
+        function checkAdmin(){ if(document.getElementById('admin-pwd').value==='admin'){ document.getElementById('admin-login').style.display='none'; document.getElementById('admin-panel').style.display='block'; renderAdminTable(); }else alert('密碼錯誤'); }
+        function renderAdminTable(){ const t=document.getElementById('admin-table'); let h=`<thead><tr><th>店名</th><th>操作</th></tr></thead><tbody>`; shops.forEach(s=>{ h+=`<tr><td>${s.name} <small style="color:#999">${s.isCustom?'(自訂)':'(內建)'}</small></td><td><div class="admin-btn-group">${s.isCustom?`<button class="btn btn-edit" style="font-size:0.8rem;padding:5px;" onclick="editShop(${s.id})">✎</button><button class="btn btn-danger" style="font-size:0.8rem;padding:5px;" onclick="delShop(${s.id})">🗑</button>`:'<span style="color:#ccc;padding:5px;">唯讀</span>'}</div></td></tr>`; }); t.innerHTML=h+'</tbody>'; }
+        function editShop(id){
+            const s=shops.find(x=>x.id===id); if(!s)return;
+            document.getElementById('input-id').value=s.id; document.getElementById('input-name').value=s.name; document.getElementById('input-addr').value=s.addr; document.getElementById('input-socket').value=s.socket; 
+            document.getElementById('input-limit').value=s.limit; toggleLimitInput();
+            if(s.limit === '有') document.getElementById('input-limit-note').value=s.limitNote;
+            document.getElementById('input-study').value=s.study; document.getElementById('input-chat').value=s.chat; document.getElementById('input-food').value=s.food; document.getElementById('input-price').value=s.price; document.getElementById('input-vibe').value=s.vibe; document.getElementById('input-note').value=s.note;
+            const c=document.getElementById('time-rules-container'); c.innerHTML='';
+            s.timeRules.forEach(r=>{ addTimeRule(); const row=c.lastElementChild; r.days.forEach(d=>{ const cb=row.querySelector(`input[value="${d}"]`); if(cb)cb.checked=true; }); row.querySelector('.rule-start').value=r.start; let ed=r.end; if(ed>24)ed-=24; row.querySelector('.rule-end').value=ed; });
+            closeModal('modal-admin'); document.getElementById('modal-shop').style.display='flex';
+        }
+        function delShop(id){ if(!confirm("確定刪除？"))return; let cs=JSON.parse(localStorage.getItem('customShops')||'[]'); cs=cs.filter(s=>s.id!==id); localStorage.setItem('customShops', JSON.stringify(cs)); initData(); renderAdminTable(); }
+
+        initData();
+    </script>
+</body>
+</html>
+"""
+
+@app.route('/')
+def home():
+    return render_template_string(html_code, coffee_data=csv_data)
+
+if __name__ == '__main__':
+    app.run(debug=True)
