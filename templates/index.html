@@ -228,11 +228,19 @@
 
         function initData(){
             shops=[]; 
-	    const lines=csvRawData.split('\n'); 
+ 	    const cleanedRawData = csvRawData.replace(/^\ufeff/, '').trim();
+	    let lines= cleanedRawData.split('\n');
+	    lines = lines.filter(line => line.trim().length > 0);
 	    let currentShop=null;
             for(let i=1;i<lines.length;i++){
-                if(!lines[i].trim())continue; const row=lines[i].split(',');
+                if(!lines[i].trim())continue;
+		const row=lines[i].split(',');
                 if(row[0]==='' && currentShop){
+		}else{
+			shops.push(currentShop);
+		}
+    	}
+	renderSidebar();
                     if(row[3]){ currentShop.hoursDisplay+=`\\n${row[3]}`; parseTimeRule(currentShop,row[3]); }
                     // *** 修正重點：只合併文字，不強改狀態 ***
                     if(row[10]) currentShop.limitNote = (currentShop.limitNote ? currentShop.limitNote + "; " : "") + row[10];
