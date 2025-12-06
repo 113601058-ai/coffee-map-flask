@@ -227,7 +227,9 @@
         function updateUserUI(){ document.getElementById('btn-user').innerHTML = currentUser ? `👤 ${currentUser} (登出)` : `👤 訪客 (點擊登入)`; }
 
         function initData(){
-            shops=[]; const lines=csvRawData.split('\\n'); let currentShop=null;
+            shops=[]; 
+	    const lines=csvRawData.split('\n'); 
+	    let currentShop=null;
             for(let i=1;i<lines.length;i++){
                 if(!lines[i].trim())continue; const row=lines[i].split(',');
                 if(row[0]==='' && currentShop){
