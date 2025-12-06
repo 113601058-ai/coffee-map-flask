@@ -191,7 +191,7 @@
         function getStarSVG(active=false, attr=""){ const c=active?'star-btn-svg active':'star-btn-svg'; return `<svg class="${c}" viewBox="0 0 24 24" ${attr}><path d="M12,2 L15.09,8.26 L22,9.27 L17,14.14 L18.18,21.02 L12,17.77 L5.82,21.02 L7,14.14 L2,9.27 L8.91,8.26 L12,2 Z"></path></svg>`; }
         
         // 這裡我們接收 Python 傳過來的變數 coffee_data
-	const csvRawData = {{ csv_data | tojson | safe }};
+	const csvRawData = {{ coffee_data | tojson | safe }};
         let shops=[], favorites=new Set(), currentUser=null, previousView='view-filter';
 
         window.showTimeNote = function(txt) { alert('⚠️ 限時說明：\\n' + txt); }
