@@ -229,24 +229,32 @@
         function initData(){
             shops=[]; 
  	    const originalCsvString = JSON.parse(csvRawData);
-            const lines=csvRawData.split('\n');
+            const lines = originalCsvString.split('\n');
 
 	    let currentShop=null;
 
 	    for(let i=1;i<lines.length;i++){
-                if(!lines[i].trim())continue;
-		const row=lines[i].split(',');
+		const line = lines[i].trim();
+                if(!line) continue;
+		const row = line.split(',');
+
                 if(row[0]==='' && currentShop){
 		}else{
 			shops.push(currentShop);
 		}
     	}
 	renderSidebar();
-                    if(row[3]){ currentShop.hoursDisplay+=`\\n${row[3]}`; parseTimeRule(currentShop,row[3]); }
+                    if(row[3]){ 
+			currentShop.hoursDisplay+=`\n${row[3]}`; parseTimeRule(currentShop,row[3]); }
                     // *** 修正重點：只合併文字，不強改狀態 ***
-                    if(row[10]) currentShop.limitNote = (currentShop.limitNote ? currentShop.limitNote + "; " : "") + row[10];
+                    if(row[10]) {
+			currentShop.limitNote = (currentShop.limitNote ? currentShop.limitNote + "; " : "") + row[10];
+		    }
                 }else{
-                    currentShop={ 
+                    if(currentShop) {
+                	shops.push(currentShop);
+            	     }	
+		    currentShop = {
                         id:i, isCustom:false, name:row[0], addr:row[1], hoursDisplay:row[3], timeRules:[], 
                         food:row[4], price:row[5], vibe:row[6], socket:row[7], limit:row[9], 
                         limitNote:row[10], study:parseInt(row[11]), chat:parseInt(row[12]), note:row[13] 
