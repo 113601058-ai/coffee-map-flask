@@ -33,6 +33,7 @@ the Second Half,116臺北市文山區指南路三段5號,捷運指南/動物園�
 def home():
     # 使用 render_template 來讀取外部 HTML 檔案
     # 並將 csv_data 傳遞給網頁，變數名稱設為 coffee_data
+    import json
     safe_data = json.dumps(csv_data)
     return render_template('index.html', coffee_data=csv_data)
 if __name__ == '__main__':

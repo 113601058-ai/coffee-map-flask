@@ -228,11 +228,12 @@
 
         function initData(){
             shops=[]; 
- 	    const cleanedRawData = csvRawData.replace(/^\ufeff/, '').trim();
-	    let lines= cleanedRawData.split('\n');
-	    lines = lines.filter(line => line.trim().length > 0);
+ 	    const originalCsvString = JSON.parse(csvRawData);
+            const lines = originalCsvString.split('\n');
+
 	    let currentShop=null;
-            for(let i=1;i<lines.length;i++){
+
+	    for(let i=1;i<lines.length;i++){
                 if(!lines[i].trim())continue;
 		const row=lines[i].split(',');
                 if(row[0]==='' && currentShop){
